@@ -1,30 +1,184 @@
 // ================================================================
-// AI TRANSLATOR — script.js
-// Replace with your actual Groq API key (starts with gsk_)
+// MICHI — AI Voice Translator
+// API key lives server-side in netlify/functions/translate.js
 // ================================================================
-const GROQ_API_KEY = 'api key here';
 
 // ----- UI Text Constants -----
 const PLACEHOLDER_TEXT = 'Press mic to speak';
 const LISTENING_TEXT = 'Listening...';
 const TRANSLATING_TEXT = 'Translating...';
 
-// ----- LANGUAGE FLAGS - Local Images -----
+// ----- Language code to full name map -----
+const LANGUAGE_NAMES = {
+    // Original
+    'en':  'English',
+    'es':  'Spanish',
+    'fr':  'French',
+    'de':  'German',
+    'ja':  'Japanese',
+    'zh':  'Chinese (Simplified)',
+    'zh-TW': 'Chinese (Traditional)',
+    'ko':  'Korean',
+    'pt':  'Portuguese',
+    'pt-BR': 'Portuguese (Brazilian)',
+    'it':  'Italian',
+    'ru':  'Russian',
+    'ar':  'Arabic',
+    'hi':  'Hindi',
+    'fil': 'Filipino (Tagalog)',
+    // Expanded
+    'bn':  'Bengali',
+    'ur':  'Urdu',
+    'id':  'Indonesian',
+    'ms':  'Malay',
+    'tr':  'Turkish',
+    'vi':  'Vietnamese',
+    'th':  'Thai',
+    'pl':  'Polish',
+    'nl':  'Dutch',
+    'sv':  'Swedish',
+    'no':  'Norwegian',
+    'da':  'Danish',
+    'fi':  'Finnish',
+    'el':  'Greek',
+    'he':  'Hebrew',
+    'fa':  'Persian (Farsi)',
+    'uk':  'Ukrainian',
+    'ro':  'Romanian',
+    'hu':  'Hungarian',
+    'cs':  'Czech',
+    'sk':  'Slovak',
+    'hr':  'Croatian',
+    'bg':  'Bulgarian',
+    'sr':  'Serbian',
+    'lt':  'Lithuanian',
+    'lv':  'Latvian',
+    'et':  'Estonian',
+    'sw':  'Swahili',
+    'am':  'Amharic',
+    'yo':  'Yoruba',
+    'ig':  'Igbo',
+    'ha':  'Hausa',
+    'zu':  'Zulu',
+    'af':  'Afrikaans',
+    'km':  'Khmer',
+    'lo':  'Lao',
+    'my':  'Burmese',
+    'ne':  'Nepali',
+    'si':  'Sinhala',
+    'ta':  'Tamil',
+    'te':  'Telugu',
+    'ml':  'Malayalam',
+    'kn':  'Kannada',
+    'gu':  'Gujarati',
+    'pa':  'Punjabi',
+    'mr':  'Marathi',
+    'mn':  'Mongolian',
+    'ka':  'Georgian',
+    'az':  'Azerbaijani',
+    'kk':  'Kazakh',
+    'uz':  'Uzbek',
+    'hy':  'Armenian',
+    'mk':  'Macedonian',
+    'sq':  'Albanian',
+    'bs':  'Bosnian',
+    'sl':  'Slovenian',
+    'ca':  'Catalan',
+    'gl':  'Galician',
+    'eu':  'Basque',
+    'is':  'Icelandic',
+    'mt':  'Maltese',
+    'cy':  'Welsh',
+    'ga':  'Irish',
+    'lb':  'Luxembourgish',
+};
+
+function getLangName(code) {
+    return LANGUAGE_NAMES[code] || code;
+}
+
+// ----- LANGUAGE FLAGS - FlagCDN (online, no local files needed) -----
+const FLAG_CDN = 'https://flagcdn.com/w40';
 const LANGUAGE_FLAGS = {
-    'en': 'images/flags/us.png',
-    'es': 'images/flags/es.png',
-    'fr': 'images/flags/fr.png',
-    'de': 'images/flags/de.png',
-    'ja': 'images/flags/jp.png',
-    'zh': 'images/flags/cn.png',
-    'ko': 'images/flags/kr.png',
-    'pt': 'images/flags/pt.png',
-    'it': 'images/flags/it.png',
-    'ru': 'images/flags/ru.png',
-    'ar': 'images/flags/sa.png',
-    'hi': 'images/flags/in.png',
-    'fil': 'images/flags/ph.png',  // ← Add Filipino
-    'ceb': 'images/flags/ph.png'   // ← Add Cebuano (same flag)
+    'en':    `${FLAG_CDN}/us.png`,
+    'es':    `${FLAG_CDN}/es.png`,
+    'fr':    `${FLAG_CDN}/fr.png`,
+    'de':    `${FLAG_CDN}/de.png`,
+    'ja':    `${FLAG_CDN}/jp.png`,
+    'zh':    `${FLAG_CDN}/cn.png`,
+    'zh-TW': `${FLAG_CDN}/tw.png`,
+    'ko':    `${FLAG_CDN}/kr.png`,
+    'pt':    `${FLAG_CDN}/pt.png`,
+    'pt-BR': `${FLAG_CDN}/br.png`,
+    'it':    `${FLAG_CDN}/it.png`,
+    'ru':    `${FLAG_CDN}/ru.png`,
+    'ar':    `${FLAG_CDN}/sa.png`,
+    'hi':    `${FLAG_CDN}/in.png`,
+    'fil':   `${FLAG_CDN}/ph.png`,
+    'bn':    `${FLAG_CDN}/bd.png`,
+    'ur':    `${FLAG_CDN}/pk.png`,
+    'id':    `${FLAG_CDN}/id.png`,
+    'ms':    `${FLAG_CDN}/my.png`,
+    'tr':    `${FLAG_CDN}/tr.png`,
+    'vi':    `${FLAG_CDN}/vn.png`,
+    'th':    `${FLAG_CDN}/th.png`,
+    'pl':    `${FLAG_CDN}/pl.png`,
+    'nl':    `${FLAG_CDN}/nl.png`,
+    'sv':    `${FLAG_CDN}/se.png`,
+    'no':    `${FLAG_CDN}/no.png`,
+    'da':    `${FLAG_CDN}/dk.png`,
+    'fi':    `${FLAG_CDN}/fi.png`,
+    'el':    `${FLAG_CDN}/gr.png`,
+    'he':    `${FLAG_CDN}/il.png`,
+    'fa':    `${FLAG_CDN}/ir.png`,
+    'uk':    `${FLAG_CDN}/ua.png`,
+    'ro':    `${FLAG_CDN}/ro.png`,
+    'hu':    `${FLAG_CDN}/hu.png`,
+    'cs':    `${FLAG_CDN}/cz.png`,
+    'sk':    `${FLAG_CDN}/sk.png`,
+    'hr':    `${FLAG_CDN}/hr.png`,
+    'bg':    `${FLAG_CDN}/bg.png`,
+    'sr':    `${FLAG_CDN}/rs.png`,
+    'lt':    `${FLAG_CDN}/lt.png`,
+    'lv':    `${FLAG_CDN}/lv.png`,
+    'et':    `${FLAG_CDN}/ee.png`,
+    'sw':    `${FLAG_CDN}/ke.png`,
+    'am':    `${FLAG_CDN}/et.png`,
+    'yo':    `${FLAG_CDN}/ng.png`,
+    'ig':    `${FLAG_CDN}/ng.png`,
+    'ha':    `${FLAG_CDN}/ng.png`,
+    'zu':    `${FLAG_CDN}/za.png`,
+    'af':    `${FLAG_CDN}/za.png`,
+    'km':    `${FLAG_CDN}/kh.png`,
+    'lo':    `${FLAG_CDN}/la.png`,
+    'my':    `${FLAG_CDN}/mm.png`,
+    'ne':    `${FLAG_CDN}/np.png`,
+    'si':    `${FLAG_CDN}/lk.png`,
+    'ta':    `${FLAG_CDN}/in.png`,
+    'te':    `${FLAG_CDN}/in.png`,
+    'ml':    `${FLAG_CDN}/in.png`,
+    'kn':    `${FLAG_CDN}/in.png`,
+    'gu':    `${FLAG_CDN}/in.png`,
+    'pa':    `${FLAG_CDN}/in.png`,
+    'mr':    `${FLAG_CDN}/in.png`,
+    'mn':    `${FLAG_CDN}/mn.png`,
+    'ka':    `${FLAG_CDN}/ge.png`,
+    'az':    `${FLAG_CDN}/az.png`,
+    'kk':    `${FLAG_CDN}/kz.png`,
+    'uz':    `${FLAG_CDN}/uz.png`,
+    'hy':    `${FLAG_CDN}/am.png`,
+    'mk':    `${FLAG_CDN}/mk.png`,
+    'sq':    `${FLAG_CDN}/al.png`,
+    'bs':    `${FLAG_CDN}/ba.png`,
+    'sl':    `${FLAG_CDN}/si.png`,
+    'ca':    `${FLAG_CDN}/es.png`,
+    'gl':    `${FLAG_CDN}/es.png`,
+    'eu':    `${FLAG_CDN}/es.png`,
+    'is':    `${FLAG_CDN}/is.png`,
+    'mt':    `${FLAG_CDN}/mt.png`,
+    'cy':    `${FLAG_CDN}/gb.png`,
+    'ga':    `${FLAG_CDN}/ie.png`,
+    'lb':    `${FLAG_CDN}/lu.png`,
 };
 
 function updateFlag(speaker, langCode) {
@@ -42,14 +196,14 @@ function updateFlag(speaker, langCode) {
 // ================================================================
 // DOM REFERENCES
 // ================================================================
-const speakBtn1    = document.getElementById('speakBtn1');
-const speakBtn2    = document.getElementById('speakBtn2');
-const status1      = document.getElementById('status1');
-const status2      = document.getElementById('status2');
+const speakBtn1        = document.getElementById('speakBtn1');
+const speakBtn2        = document.getElementById('speakBtn2');
+const status1          = document.getElementById('status1');
+const status2          = document.getElementById('status2');
 const translationText1 = document.getElementById('translationText1');
 const translationText2 = document.getElementById('translationText2');
-const lang1        = document.getElementById('lang1');
-const lang2        = document.getElementById('lang2');
+const lang1            = document.getElementById('lang1');
+const lang2            = document.getElementById('lang2');
 
 // ================================================================
 // STATE MACHINE
@@ -185,16 +339,15 @@ function setTranslationCardState(speaker, isEmpty) {
 }
 
 // MICROPHONE ICON SWAPPER
-const MIC_ACTIVE = 'images/mic-active.png';
+const MIC_ACTIVE   = 'images/mic-active.png';
 const MIC_LISTENING = 'images/mic-listening.png';
-const MIC_DISABLED = 'images/mic-disabled.png';
+const MIC_DISABLED  = 'images/mic-disabled.png';
 
 function setMicIcon(speaker, state) {
     const iconId = speaker === 1 ? 'micIcon1' : 'micIcon2';
     const icon = document.getElementById(iconId);
     if (!icon) return;
 
-    // Also check if the button is disabled
     const btn = speaker === 1 ? speakBtn1 : speakBtn2;
 
     if (btn.disabled) {
@@ -203,23 +356,14 @@ function setMicIcon(speaker, state) {
     }
 
     switch (state) {
-        case 'idle':
-        case 'ready':
-            icon.src = MIC_ACTIVE;
-            break;
         case 'listening':
             icon.src = MIC_LISTENING;
-            break;
-        case 'translating':
-            icon.src = MIC_ACTIVE;
-            break;
-        case 'disabled':
-            icon.src = MIC_DISABLED;
             break;
         default:
             icon.src = MIC_ACTIVE;
     }
 }
+
 // ================================================================
 // SPEECH RECOGNITION
 // ================================================================
@@ -296,7 +440,7 @@ function startListening(speaker) {
         else isListening2 = false;
 
         let msg = 'Error. Try again.';
-        if (event.error === 'not-allowed')  msg = 'Mic permission denied. Check browser settings.';
+        if (event.error === 'not-allowed')    msg = 'Mic permission denied. Check browser settings.';
         else if (event.error === 'no-speech') msg = 'No speech detected.';
         else if (event.error === 'network')   msg = 'Network error. Check connection.';
 
@@ -323,9 +467,9 @@ function startListening(speaker) {
             setState(speaker === 1 ? 'speaker1_translating' : 'speaker2_translating');
             setDisplayText(speaker, finalText, 'final-own');
 
-            const sourceLang = speaker === 1 ? lang1.value : lang2.value;
-            const targetLang = speaker === 1 ? lang2.value : lang1.value;
-            translateWithGemini(finalText.trim(), sourceLang, targetLang, speaker);
+            const sourceLangCode = speaker === 1 ? lang1.value : lang2.value;
+            const targetLangCode = speaker === 1 ? lang2.value : lang1.value;
+            translateText(finalText.trim(), sourceLangCode, targetLangCode, speaker);
         } else {
             setDisplayText(speaker, 'No speech detected', 'error');
             setTimeout(() => {
@@ -369,70 +513,43 @@ function stopListening(speaker) {
 // ================================================================
 // TRANSLATION — GROQ API
 // ================================================================
-async function translateWithGemini(text, sourceLang, targetLang, speaker) {
+async function translateText(text, sourceLangCode, targetLangCode, speaker) {
     const targetSpeaker = speaker === 1 ? 2 : 1;
+
+    const sourceLangName = getLangName(sourceLangCode);
+    const targetLangName = getLangName(targetLangCode);
+
+    console.log(`[Translate] From ${sourceLangName} to ${targetLangName}: "${text}"`);
 
     setDisplayText(targetSpeaker, TRANSLATING_TEXT, 'translating');
 
     const historyContext = getHistoryContext();
-    const contextBlock = historyContext
-        ? `Previous conversation context (for reference only):\n${historyContext}\n\n`
-        : '';
-
-    const prompt = `You are a professional interpreter.
-
-Translate the following text from ${sourceLang} to ${targetLang}.
-
-Requirements:
-- Preserve the original meaning, intent, and tone.
-- Produce a natural, fluent translation that sounds like a native speaker.
-- Adapt idioms, expressions, and cultural references when appropriate instead of translating them literally.
-- Do not add, remove, or explain information.
-- Preserve names, numbers, URLs, email addresses, and technical terms unless they should naturally be translated.
-- Keep the same level of formality as the original.
-- If the input is incomplete or contains speech disfluencies, translate it as naturally as possible without inventing missing content.
-
-${contextBlock}Text:
-${text}
-
-Return only the translated text.`;
 
     try {
-        const response = await fetch(
-            'https://api.groq.com/openai/v1/chat/completions',
-            {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${GROQ_API_KEY}`
-                },
-                body: JSON.stringify({
-                    model: 'llama-3.3-70b-versatile',
-                    temperature: 0.3,
-                    max_tokens: 512,
-                    messages: [
-                        {
-                            role: 'user',
-                            content: prompt
-                        }
-                    ]
-                })
-            }
-        );
-
-        if (!response.ok) {
-            const errData = await response.json().catch(() => ({}));
-            throw new Error(`Groq API ${response.status}: ${errData?.error?.message || response.statusText}`);
-        }
+        const response = await fetch('/.netlify/functions/translate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                text,
+                sourceLangName,
+                targetLangName,
+                historyContext
+            })
+        });
 
         const data = await response.json();
-        const translation = data?.choices?.[0]?.message?.content?.trim();
 
-        if (!translation) {
-            throw new Error('Empty response from Groq');
+        if (!response.ok) {
+            throw new Error(data?.error || `Server error: ${response.status}`);
         }
 
-        console.log(`[Groq] "${text}" → "${translation}"`);
+        const translation = data.translation;
+
+        if (!translation) {
+            throw new Error('Empty translation received');
+        }
+
+        console.log(`[Translate] Result: "${translation}"`);
 
         addToHistory(speaker, text, translation);
         displayTranslation(translation, targetSpeaker);
@@ -440,17 +557,15 @@ Return only the translated text.`;
         setState('idle');
 
     } catch (err) {
-        console.error('[Groq] Translation failed:', err);
+        console.error('[Translate] Failed:', err);
         setDisplayText(targetSpeaker, 'Translation failed. Tap to retry.', 'error');
         setDisplayText(speaker, PLACEHOLDER_TEXT, 'idle');
         setState('idle');
     }
 }
-
 function displayTranslation(translation, targetSpeaker) {
     setDisplayText(targetSpeaker, translation, 'translated');
     setTranslationCardState(targetSpeaker, false);
-    
     const speaker = targetSpeaker === 1 ? 2 : 1;
     setDisplayText(speaker, PLACEHOLDER_TEXT, 'idle');
 }
@@ -546,14 +661,14 @@ document.addEventListener('keyup', (e) => {
 // LANGUAGE CHANGE
 // ================================================================
 lang1.addEventListener('change', () => {
-    console.log(`[Lang] Speaker 1 → ${lang1.value}`);
+    console.log(`[Lang] Speaker 1 → ${lang1.value} (${getLangName(lang1.value)})`);
     updateFlag(1, lang1.value);
     conversationHistory.length = 0;
     if (appState === 'idle') setDisplayText(1, PLACEHOLDER_TEXT, 'idle');
 });
 
 lang2.addEventListener('change', () => {
-    console.log(`[Lang] Speaker 2 → ${lang2.value}`);
+    console.log(`[Lang] Speaker 2 → ${lang2.value} (${getLangName(lang2.value)})`);
     updateFlag(2, lang2.value);
     conversationHistory.length = 0;
     if (appState === 'idle') setDisplayText(2, PLACEHOLDER_TEXT, 'idle');
@@ -568,71 +683,59 @@ setDisplayText(2, PLACEHOLDER_TEXT, 'idle');
 updateFlag(1, lang1.value);
 updateFlag(2, lang2.value);
 
-console.log('[Init] AI Translator ready');
-console.log(`[Init] API key: ${GROQ_API_KEY ? 'set' : 'MISSING'}`);
-
+console.log('[Init] MICHI ready');
+console.log('[Init] Translation requests will be routed through Netlify Function');
 
 // ================================================================
 // CUSTOM DROPDOWN
 // ================================================================
 function initDropdown(dropdownId, buttonId, menuId, langSelectId) {
     const dropdown = document.getElementById(dropdownId);
-    const button = document.getElementById(buttonId);
-    const menu = document.getElementById(menuId);
+    const button   = document.getElementById(buttonId);
+    const menu     = document.getElementById(menuId);
     const langSelect = document.getElementById(langSelectId);
 
-    // Toggle dropdown
     button.addEventListener('click', (e) => {
         e.stopPropagation();
         const isOpen = menu.classList.toggle('open');
         button.querySelector('.arrow').classList.toggle('open', isOpen);
     });
 
-    // Select option
     menu.addEventListener('click', (e) => {
         const li = e.target.closest('li');
         if (!li) return;
 
         const value = li.dataset.value;
-        const flag = li.dataset.flag;
-        const text = li.textContent.trim();
+        const flag  = li.dataset.flag;
+        const text  = li.textContent.trim();
 
-        // Update button
-        const flagImg = button.querySelector('.flag-image');
+        const flagImg  = button.querySelector('.flag-image');
         const textSpan = button.querySelector('.selected-text');
-        flagImg.src = flag;
-        flagImg.alt = text;
+        flagImg.src  = flag;
+        flagImg.alt  = text;
         textSpan.textContent = text;
 
-        // Update hidden select
         langSelect.value = value;
 
-        // Update active state
         menu.querySelectorAll('li').forEach(item => item.classList.remove('active'));
         li.classList.add('active');
 
-        // Close dropdown
         menu.classList.remove('open');
         button.querySelector('.arrow').classList.remove('open');
 
-        // Trigger change event
-        const event = new Event('change');
-        langSelect.dispatchEvent(event);
+        langSelect.dispatchEvent(new Event('change'));
 
-        // Update flag if needed
         if (typeof updateFlag === 'function') {
             const speaker = langSelectId === 'lang1' ? 1 : 2;
             updateFlag(speaker, value);
         }
     });
 
-    // Close dropdown when clicking outside
     document.addEventListener('click', () => {
         menu.classList.remove('open');
         button.querySelector('.arrow').classList.remove('open');
     });
 }
 
-// Initialize custom dropdowns
 initDropdown('dropdown1', 'dropdownBtn1', 'dropdownMenu1', 'lang1');
 initDropdown('dropdown2', 'dropdownBtn2', 'dropdownMenu2', 'lang2');
